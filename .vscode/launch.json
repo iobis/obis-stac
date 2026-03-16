@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Sync STAC folder to obis-stac S3 bucket",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "aws s3 sync ${workspaceFolder}/stac s3://obis-stac",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
