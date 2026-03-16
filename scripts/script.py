@@ -21,7 +21,7 @@ class STACCreator:
         self.s3_bucket = "obis-open-data"
         self.s3_prefix = "occurrence/"
         self.keywords = ["biodiversity", "marine", "ocean", "OBIS"]
-        self.license = "CC BY-NC 4.0"
+        self.license = "CC-BY-NC-4.0"
         self.providers = [
             {
                 "name": "Ocean Biodiversity Information System (OBIS)",
@@ -41,7 +41,7 @@ class STACCreator:
                 "bbox": [[-180, -90, 180, 90]]
             },
             "temporal": {
-                "interval": [[None, "2025-12-31T23:59:59Z"]]
+                "interval": [["1900-01-01T00:00:00Z", "2026-12-31T23:59:59Z"]]
             }
         }
         self.s3_client = boto3.client("s3", config=boto3.session.Config(signature_version=botocore.UNSIGNED))
@@ -116,6 +116,57 @@ class STACCreator:
         if pa.types.is_map(arrow_type):
             return "map"
         return str(arrow_type)
+
+    def _normalize_license(self, raw: str) -> str:
+        """
+        Map free-text intellectual rights to SPDX-style license identifiers
+        accepted by STAC (^[\\w\\-\\.\\+]+$). Returns an empty string if
+        no known mapping is found, in which case the item-level license
+        will be omitted and the collection license will apply.
+        """
+        if not raw:
+            return ""
+        text = raw.strip().lower()
+
+        if (
+            "cc-by-nc 4.0" in text
+            or "cc by-nc 4.0" in text
+            or "cc by nc 4.0" in text
+            or "creative commons attribution non commercial (cc-by-nc) 4.0 license" in text
+            or "creative commons attribution non commercial (cc-by-nc 4.0) license" in text
+            or "creative commons attribution non commercial (cc-by-nc 4.0) licence" in text
+        ):
+            return "CC-BY-NC-4.0"
+
+        if (
+            "non commercial (cc-by) 4.0" in text
+            or "non-commercial (cc-by) 4.0" in text
+        ):
+            return "CC-BY-NC-4.0"
+
+        if (
+            "cc by 4.0" in text
+            or "cc-by 4.0" in text
+            or "cc by 4.0 international" in text
+            or "creative commons attribution (cc-by) 4.0 license" in text
+            or "creative commons attribution (cc-by 4.0) license" in text
+            or "creative commons attribution (cc-by 4.0) licence" in text
+        ):
+            return "CC-BY-4.0"
+        if "cc by-sa 4.0" in text or "cc-by-sa 4.0" in text:
+            return "CC-BY-SA-4.0"
+
+        if (
+            "cc0 1.0" in text
+            or "public domain (cc0 1.0)" in text
+            or "public domain dedication" in text
+            or "dedicated them to the  public domain (cc0 1.0)" in text
+            or "this work is licensed under a  public domain (cc0 1.0)" in text
+            or "to the extent possible under law, the publisher has waived all rights to these data and has dedicated them to the  public domain (cc0 1.0)" in text
+        ):
+            return "CC0-1.0"
+
+        return ""
 
     def _flatten_schema_fields(self, parent: str, field: pa.Field) -> List[Dict[str, Any]]:
         name = f"{parent}.{field.name}" if parent else field.name
@@ -233,7 +284,6 @@ class STACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json"
             ]
         }
@@ -298,7 +348,6 @@ class STACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json"
             ]
         }
@@ -387,7 +436,8 @@ class STACCreator:
         title = dataset_meta.get("title") or f"OBIS dataset {dataset_id}"
         citation = dataset_meta.get("citation") or ""
         citation_id = (dataset_meta.get("citation_id") or "").strip()
-        intellectual_rights = dataset_meta.get("intellectualrights") or ""
+        intellectual_rights_raw = dataset_meta.get("intellectualrights") or ""
+        license_id = self._normalize_license(intellectual_rights_raw)
         dataset_url = dataset_meta.get("url") or ""
 
         extent_wkt = (dataset_meta.get("extent") or "").strip()
@@ -463,7 +513,11 @@ class STACCreator:
                     if citation_id.startswith("https://doi.org/")
                     else {}
                 ),
-                "license": intellectual_rights
+                **(
+                    {"license": license_id}
+                    if license_id
+                    else {}
+                )
             },
             "assets": {
                 "data": {
