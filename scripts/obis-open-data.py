@@ -44,6 +44,7 @@ class STACCreator:
                 "interval": [["1900-01-01T00:00:00Z", "2026-12-31T23:59:59Z"]]
             }
         }
+        self.s3_https_base = f"https://{self.s3_bucket}.s3.amazonaws.com"
         self.s3_client = boto3.client("s3", config=boto3.session.Config(signature_version=botocore.UNSIGNED))
 
     def _find_first_parquet_key(self) -> str:
@@ -216,9 +217,15 @@ class STACCreator:
                 },
                 {
                     "rel": "child",
-                    "href": "./obis-open-data-occurrence-collection/collection.json",
+                    "href": "./obis-open-data-occurrence/catalog.json",
                     "type": "application/json",
-                    "title": "OBIS open data occurrence collection"
+                    "title": "OBIS open data occurrence catalog"
+                },
+                {
+                    "rel": "child",
+                    "href": "./obis-open-data-occurrence-datasets/catalog.json",
+                    "type": "application/json",
+                    "title": "OBIS occurrence individual datasets catalog"
                 },
                 {
                     "rel": "self",
@@ -228,13 +235,13 @@ class STACCreator:
             ]
         }
 
-    def create_collection_json(self) -> Dict[str, Any]:
+    def create_occurrence_catalog_json(self) -> Dict[str, Any]:
         return {
             "stac_version": "1.0.0",
-            "type": "Collection",
-            "id": "obis-open-data-occurrence-collection",
-            "title": "OBIS open data occurrence collection",
-            "description": "OBIS open data occurrence collection",
+            "type": "Catalog",
+            "id": "obis-open-data-occurrence",
+            "title": "OBIS open data occurrence catalog",
+            "description": "OBIS open data occurrence catalog",
             "keywords": self.keywords,
             "license": self.license,
             "providers": self.providers,
@@ -267,7 +274,7 @@ class STACCreator:
                 },
                 {
                     "rel": "self",
-                    "href": "./collection.json",
+                    "href": "./catalog.json",
                     "type": "application/json"
                 },
                 {
@@ -288,18 +295,18 @@ class STACCreator:
             ]
         }
 
-    def create_datasets_collection_json(self) -> Dict[str, Any]:
+    def create_datasets_catalog_json(self) -> Dict[str, Any]:
         """
-        Create a child Collection that groups all per-dataset occurrence items.
+        Create a child Catalog that groups all per-dataset occurrence items.
 
-        This keeps the main occurrence collection focused on the combined dataset,
-        while exposing all dataset-level Parquet items in a separate collection.
+        This keeps the main occurrence catalog focused on the combined dataset,
+        while exposing all dataset-level Parquet items in a separate catalog.
         """
         return {
             "stac_version": "1.0.0",
-            "type": "Collection",
+            "type": "Catalog",
             "id": "obis-open-data-occurrence-datasets",
-            "title": "OBIS occurrence individual datasets collection",
+            "title": "OBIS occurrence individual datasets catalog",
             "description": "OBIS occurrence data as individual per dataset GeoParquet files",
             "keywords": self.keywords,
             "license": self.license,
@@ -325,13 +332,13 @@ class STACCreator:
                 },
                 {
                     "rel": "parent",
-                    "href": "../obis-open-data-occurrence-collection/collection.json",
+                    "href": "../catalog.json",
                     "type": "application/json",
-                    "title": "OBIS open data occurrence collection"
+                    "title": "Root catalog"
                 },
                 {
                     "rel": "self",
-                    "href": "./collection.json",
+                    "href": "./catalog.json",
                     "type": "application/json"
                 },
                 {
@@ -381,26 +388,19 @@ class STACCreator:
             },
             "assets": {
                 "data": {
-                    "href": f"s3://{self.s3_bucket}/occurrence/*",
+                    "href": f"{self.s3_https_base}/occurrence/*",
                     "type": "application/x-parquet",
                     "roles": ["data"],
                     "title": "GeoParquet file",
                     "description": "Geoparquet file"
                 }
             },
-            "collection": "obis-open-data-occurrence-collection",
             "links": [
                 {
-                    "rel": "collection",
-                    "href": "../collection.json",
-                    "type": "application/json",
-                    "title": "Parent collection"
-                },
-                {
                     "rel": "parent",
-                    "href": "../collection.json",
+                    "href": "../catalog.json",
                     "type": "application/json",
-                    "title": "Parent collection"
+                    "title": "Parent catalog"
                 },
                 {
                     "rel": "root",
@@ -521,26 +521,19 @@ class STACCreator:
             },
             "assets": {
                 "data": {
-                    "href": f"s3://{self.s3_bucket}/{parquet_key}",
+                    "href": f"{self.s3_https_base}/{parquet_key}",
                     "type": "application/x-parquet",
                     "roles": ["data"],
                     "title": f"GeoParquet file for dataset {dataset_id}",
                     "description": f"GeoParquet file for OBIS dataset {dataset_id}"
                 }
             },
-            "collection": "obis-open-data-occurrence-datasets",
             "links": [
                 {
-                    "rel": "collection",
-                    "href": "../collection.json",
-                    "type": "application/json",
-                    "title": "Parent collection"
-                },
-                {
                     "rel": "parent",
-                    "href": "../collection.json",
+                    "href": "../catalog.json",
                     "type": "application/json",
-                    "title": "Parent collection"
+                    "title": "Parent catalog"
                 },
                 {
                     "rel": "root",
@@ -577,50 +570,43 @@ class STACCreator:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        collection_dir = output_path / "obis-open-data-occurrence-collection"
-        collection_dir.mkdir(exist_ok=True)
-        items_dir = collection_dir / "items"
+        occurrence_dir = output_path / "obis-open-data-occurrence"
+        occurrence_dir.mkdir(exist_ok=True)
+        items_dir = occurrence_dir / "items"
         items_dir.mkdir(exist_ok=True)
 
-        datasets_collection_dir = output_path / "obis-open-data-occurrence-datasets"
-        datasets_collection_dir.mkdir(exist_ok=True)
-        datasets_items_dir = datasets_collection_dir / "items"
+        datasets_catalog_dir = output_path / "obis-open-data-occurrence-datasets"
+        datasets_catalog_dir.mkdir(exist_ok=True)
+        datasets_items_dir = datasets_catalog_dir / "items"
         datasets_items_dir.mkdir(exist_ok=True)
 
         catalog_json = self.create_catalog_json()
         with open(output_path / "catalog.json", "w") as f:
             json.dump(catalog_json, f, indent=2)
 
-        collection_json = self.create_collection_json()
-        datasets_collection_json = self.create_datasets_collection_json()
+        occurrence_catalog_json = self.create_occurrence_catalog_json()
+        datasets_catalog_json = self.create_datasets_catalog_json()
 
         combined_item_json = self.create_combined_item_json()
 
         try:
             table_columns, sampled_key = self.generate_table_columns_from_s3_parquet()
-            collection_json["properties"]["table:columns"] = table_columns
-            datasets_collection_json["properties"]["table:columns"] = table_columns
+            occurrence_catalog_json["properties"]["table:columns"] = table_columns
+            datasets_catalog_json["properties"]["table:columns"] = table_columns
             combined_item_json.setdefault("properties", {})["table:columns"] = table_columns
             if sampled_key:
-                combined_item_json["assets"]["data"]["sample"] = f"s3://{self.s3_bucket}/{sampled_key}"
+                combined_item_json["assets"]["data"]["sample"] = f"{self.s3_https_base}/{sampled_key}"
         except Exception as e:
             logger.warning(f"Failed to auto-generate table:columns: {e}")
 
         with open(items_dir / f"obis-occurrence-geoparquet.json", "w") as f:
             json.dump(combined_item_json, f, indent=2)
 
-        collection_json["links"].append({
+        occurrence_catalog_json["links"].append({
             "rel": "item",
             "href": f"./items/obis-occurrence-geoparquet.json",
             "type": "application/json",
             "title": "OBIS open data occurrence dataset as GeoParquet"
-        })
-
-        collection_json["links"].append({
-            "rel": "child",
-            "href": "../obis-open-data-occurrence-datasets/collection.json",
-            "type": "application/json",
-            "title": "OBIS occurrence per-dataset collection"
         })
 
         datasets_meta = self._fetch_datasets_metadata()
@@ -648,7 +634,7 @@ class STACCreator:
             with open(datasets_items_dir / item_filename, "w") as f:
                 json.dump(dataset_item_json, f, indent=2)
 
-            datasets_collection_json["links"].append({
+            datasets_catalog_json["links"].append({
                 "rel": "item",
                 "href": f"./items/{item_filename}",
                 "type": "application/json",
@@ -657,16 +643,16 @@ class STACCreator:
 
             dataset_items_created += 1
 
-        with open(collection_dir / "collection.json", "w") as f:
-            json.dump(collection_json, f, indent=2)
+        with open(occurrence_dir / "catalog.json", "w") as f:
+            json.dump(occurrence_catalog_json, f, indent=2)
 
-        with open(datasets_collection_dir / "collection.json", "w") as f:
-            json.dump(datasets_collection_json, f, indent=2)
+        with open(datasets_catalog_dir / "catalog.json", "w") as f:
+            json.dump(datasets_catalog_json, f, indent=2)
 
         logger.info(f"STAC catalog created at {output_path}")
         logger.info(
-            f"Catalog contains 1 combined item in the main occurrence collection "
-            f"and {dataset_items_created} per-dataset items in the datasets collection"
+            f"Catalog contains 1 combined item in the main occurrence catalog "
+            f"and {dataset_items_created} per-dataset items in the datasets catalog"
         )
 
         return output_path
@@ -674,7 +660,7 @@ class STACCreator:
 
 def main():
     creator = STACCreator()
-    catalog_path = creator.create_full_catalog(output_dir="./stac")
+    catalog_path = creator.create_full_catalog(output_dir="./stac/obis-open-data")
     print(f"STAC catalog created at: {catalog_path}")
 
 

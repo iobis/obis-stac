@@ -1,2 +1,4 @@
 stac
 .DS_Store
+.venv
+stac/

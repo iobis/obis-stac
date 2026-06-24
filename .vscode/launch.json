@@ -2,20 +2,37 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Generate STAC catalog",
+      "name": "Generate STAC catalog for OBIS open data",
       "type": "debugpy",
       "request": "launch",
-      "program": "scripts/script.py",
+      "program": "scripts/obis-open-data.py",
       "console": "integratedTerminal",
       "env": {
         "PYTHONPATH": "${workspaceFolder}"
       }
     },
     {
-      "name": "Sync STAC folder to obis-stac S3 bucket",
+      "name": "Sync OBIS open data STAC folder to obis-stac S3 bucket",
       "type": "node-terminal",
       "request": "launch",
-      "command": "aws s3 sync ${workspaceFolder}/stac s3://obis-stac",
+      "command": "aws s3 sync ${workspaceFolder}/stac/obis-open-data s3://obis-stac/obis-open-data",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Generate STAC catalog for speciesgrids",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "scripts/speciesgrids.py",
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Sync speciesgrids STAC folder to obis-stac S3 bucket",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "aws s3 sync ${workspaceFolder}/stac/speciesgrids s3://obis-stac/speciesgrids",
       "cwd": "${workspaceFolder}"
     }
   ]
