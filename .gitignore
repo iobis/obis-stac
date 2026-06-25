@@ -2,3 +2,4 @@ stac
 .DS_Store
 .venv
 stac/
+_cleanup.R
