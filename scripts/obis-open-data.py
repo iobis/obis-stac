@@ -238,7 +238,7 @@ class STACCreator:
     def create_occurrence_catalog_json(self) -> Dict[str, Any]:
         return {
             "stac_version": "1.0.0",
-            "type": "Catalog",
+            "type": "Collection",
             "id": "obis-open-data-occurrence",
             "title": "OBIS open data occurrence catalog",
             "description": "OBIS open data occurrence catalog",
@@ -304,7 +304,7 @@ class STACCreator:
         """
         return {
             "stac_version": "1.0.0",
-            "type": "Catalog",
+            "type": "Collection",
             "id": "obis-open-data-occurrence-datasets",
             "title": "OBIS occurrence individual datasets catalog",
             "description": "OBIS occurrence data as individual per dataset GeoParquet files",

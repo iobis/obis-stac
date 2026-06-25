@@ -112,49 +112,13 @@ class speciesgridsSTACCreator:
             columns.extend(self._flatten_schema_fields("", field))
         return columns, parquet_key
 
-    def create_root_catalog_json(self) -> Dict[str, Any]:
+    def _collection_base(self, id: str, title: str, description: str, self_href: str, parent_dir: str = "..") -> Dict[str, Any]:
         return {
             "stac_version": "1.0.0",
-            "type": "Catalog",
-            "id": "obis-speciesgrids-catalog",
-            "title": "OBIS speciesgrids catalog",
-            "description": (
-                "OBIS speciesgrids catalog containing global marine species distributions "
-                "aggregated on an H3 hexagonal grid, sourced from OBIS and GBIF."
-            ),
-            "links": [
-                {
-                    "rel": "root",
-                    "href": "./catalog.json",
-                    "type": "application/json",
-                    "title": "Root catalog"
-                },
-                {
-                    "rel": "child",
-                    "href": "./speciesgrids-h3-7/catalog.json",
-                    "type": "application/json",
-                    "title": "speciesgrids H3 resolution 7"
-                },
-                {
-                    "rel": "self",
-                    "href": "./catalog.json",
-                    "type": "application/json"
-                }
-            ]
-        }
-
-    def create_h3_7_catalog_json(self) -> Dict[str, Any]:
-        return {
-            "stac_version": "1.0.0",
-            "type": "Catalog",
-            "id": "speciesgrids-h3-7",
-            "title": "speciesgrids H3 resolution 7",
-            "description": (
-                "Global marine species distributions from OBIS and GBIF aggregated on an H3 hexagonal grid "
-                "at resolution 7 (~5.16 km² cells). The dataset is stored as 64 GeoParquet files partitioned "
-                "by Bing Maps quadkey at zoom level 3. Each row represents one species in one H3 cell and "
-                "includes occurrence counts, year range, full taxonomy, and IUCN Red List status."
-            ),
+            "type": "Collection",
+            "id": id,
+            "title": title,
+            "description": description,
             "keywords": self.keywords,
             "license": self.license,
             "providers": self.providers,
@@ -167,25 +131,25 @@ class speciesgridsSTACCreator:
                     "type": "application/x-parquet",
                     "roles": ["data"],
                     "title": "GeoParquet file",
-                    "description": "GeoParquet file partitioned by Bing Maps quadkey at zoom level 3"
+                    "description": "GeoParquet file for the speciesgrids H3 resolution 7 dataset"
                 }
             },
             "links": [
                 {
                     "rel": "root",
-                    "href": "../catalog.json",
+                    "href": f"{parent_dir}/catalog.json",
                     "type": "application/json",
                     "title": "Root catalog"
                 },
                 {
                     "rel": "parent",
-                    "href": "../catalog.json",
+                    "href": f"{parent_dir}/catalog.json",
                     "type": "application/json",
                     "title": "Root catalog"
                 },
                 {
                     "rel": "self",
-                    "href": "./catalog.json",
+                    "href": self_href,
                     "type": "application/json"
                 },
                 {
@@ -207,39 +171,58 @@ class speciesgridsSTACCreator:
             ]
         }
 
-    def create_item_json(self, parquet_keys: List[str]) -> Dict[str, Any]:
-        """
-        Single STAC item for the full H3-7 dataset.
-
-        The primary 'data' asset points to the S3 prefix for the entire partition set.
-        Individual per-quadkey assets are also included for direct file access.
-        """
-        bbox = self.extent["spatial"]["bbox"][0]
-
-        assets: Dict[str, Any] = {
-            "data": {
-                "href": f"{self.s3_https_base}/{self.s3_prefix}",
-                "type": "application/x-parquet",
-                "roles": ["data"],
-                "title": "speciesgrids H3-7 full dataset",
-                "description": (
-                    f"Full speciesgrids H3 resolution 7 dataset as 64 GeoParquet files. "
-                    f"Partitioned by Bing Maps quadkey at zoom level 3. "
-                    f"Access all files under {self.s3_https_base}/{self.s3_prefix}"
-                )
-            }
+    def create_root_catalog_json(self) -> Dict[str, Any]:
+        return {
+            "stac_version": "1.0.0",
+            "type": "Catalog",
+            "id": "obis-speciesgrids-catalog",
+            "title": "OBIS speciesgrids catalog",
+            "description": (
+                "OBIS speciesgrids catalog containing global marine species distributions "
+                "aggregated on an H3 hexagonal grid, sourced from OBIS and GBIF."
+            ),
+            "links": [
+                {
+                    "rel": "root",
+                    "href": "./catalog.json",
+                    "type": "application/json",
+                    "title": "Root catalog"
+                },
+                {
+                    "rel": "child",
+                    "href": "./speciesgrids-h3-7/collection.json",
+                    "type": "application/json",
+                    "title": "speciesgrids H3 resolution 7"
+                },
+                {
+                    "rel": "child",
+                    "href": "./speciesgrids-h3-7-quadkeys/collection.json",
+                    "type": "application/json",
+                    "title": "speciesgrids H3 resolution 7 by quadkey"
+                },
+                {
+                    "rel": "self",
+                    "href": "./catalog.json",
+                    "type": "application/json"
+                }
+            ]
         }
 
-        for key in parquet_keys:
-            quadkey = Path(key).stem
-            assets[f"data-{quadkey}"] = {
-                "href": f"{self.s3_https_base}/{key}",
-                "type": "application/x-parquet",
-                "roles": ["data"],
-                "title": f"Quadkey {quadkey}",
-                "description": f"GeoParquet file for Bing Maps quadkey {quadkey} (zoom level 3)"
-            }
+    def create_h3_7_collection_json(self) -> Dict[str, Any]:
+        return self._collection_base(
+            id="speciesgrids-h3-7",
+            title="speciesgrids H3 resolution 7",
+            description=(
+                "Global marine species distributions from OBIS and GBIF aggregated on an H3 hexagonal grid "
+                "at resolution 7 (~5.16 km² cells). The dataset is stored as 64 GeoParquet files partitioned "
+                "by Bing Maps quadkey at zoom level 3. Each row represents one species in one H3 cell and "
+                "includes occurrence counts, year range, full taxonomy, and IUCN Red List status."
+            ),
+            self_href="./collection.json"
+        )
 
+    def create_h3_7_item_json(self) -> Dict[str, Any]:
+        bbox = self.extent["spatial"]["bbox"][0]
         return {
             "stac_version": "1.0.0",
             "type": "Feature",
@@ -269,13 +252,24 @@ class speciesgridsSTACCreator:
                 "version": self.version,
                 "table:columns": []
             },
-            "assets": assets,
+            "assets": {
+                "data": {
+                    "href": f"{self.s3_https_base}/{self.s3_prefix}",
+                    "type": "application/x-parquet",
+                    "roles": ["data"],
+                    "title": "speciesgrids H3-7 full dataset",
+                    "description": (
+                        "Full speciesgrids H3 resolution 7 dataset as 64 GeoParquet files, "
+                        f"partitioned by Bing Maps quadkey at zoom level 3 under {self.s3_https_base}/{self.s3_prefix}"
+                    )
+                }
+            },
             "links": [
                 {
                     "rel": "parent",
-                    "href": "../catalog.json",
+                    "href": "../collection.json",
                     "type": "application/json",
-                    "title": "speciesgrids H3-7 catalog"
+                    "title": "speciesgrids H3 resolution 7 collection"
                 },
                 {
                     "rel": "root",
@@ -301,47 +295,159 @@ class speciesgridsSTACCreator:
             ]
         }
 
+    def create_quadkeys_collection_json(self) -> Dict[str, Any]:
+        return self._collection_base(
+            id="speciesgrids-h3-7-quadkeys",
+            title="speciesgrids H3 resolution 7 by quadkey",
+            description=(
+                "Global marine species distributions from OBIS and GBIF aggregated on an H3 hexagonal grid "
+                "at resolution 7 (~5.16 km² cells), destructured into individual GeoParquet files by "
+                "Bing Maps quadkey at zoom level 3. Each item corresponds to one quadkey tile."
+            ),
+            self_href="./collection.json"
+        )
+
+    def create_quadkey_item_json(self, quadkey: str, parquet_key: str) -> Dict[str, Any]:
+        bbox = self.extent["spatial"]["bbox"][0]
+        item_id = f"speciesgrids-h3-7-{quadkey}"
+        return {
+            "stac_version": "1.0.0",
+            "type": "Feature",
+            "id": item_id,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [bbox[0], bbox[1]],
+                    [bbox[2], bbox[1]],
+                    [bbox[2], bbox[3]],
+                    [bbox[0], bbox[3]],
+                    [bbox[0], bbox[1]]
+                ]]
+            },
+            "bbox": bbox,
+            "properties": {
+                "datetime": "2024-05-31T23:59:59Z",
+                "title": f"speciesgrids H3-7 quadkey {quadkey}",
+                "description": (
+                    f"GeoParquet file for Bing Maps quadkey {quadkey} (zoom level 3): "
+                    "global marine species distributions at H3 resolution 7."
+                ),
+                "created": datetime.utcnow().isoformat() + "Z",
+                "updated": datetime.utcnow().isoformat() + "Z",
+                "version": self.version,
+                "table:columns": []
+            },
+            "assets": {
+                "data": {
+                    "href": f"{self.s3_https_base}/{parquet_key}",
+                    "type": "application/x-parquet",
+                    "roles": ["data"],
+                    "title": f"Quadkey {quadkey}",
+                    "description": f"GeoParquet file for Bing Maps quadkey {quadkey} (zoom level 3)"
+                }
+            },
+            "links": [
+                {
+                    "rel": "parent",
+                    "href": "../collection.json",
+                    "type": "application/json",
+                    "title": "speciesgrids H3 resolution 7 by quadkey collection"
+                },
+                {
+                    "rel": "root",
+                    "href": "../../catalog.json",
+                    "type": "application/json",
+                    "title": "Root catalog"
+                },
+                {
+                    "rel": "self",
+                    "href": f"./{item_id}.json",
+                    "type": "application/json"
+                },
+                {
+                    "rel": "about",
+                    "href": "https://github.com/iobis/speciesgrids",
+                    "type": "text/html",
+                    "title": "speciesgrids GitHub repository"
+                }
+            ],
+            "stac_extensions": [
+                "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+                "https://stac-extensions.github.io/version/v1.2.0/schema.json"
+            ]
+        }
+
     def create_full_catalog(self, output_dir: str) -> Path:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
         h3_7_dir = output_path / "speciesgrids-h3-7"
         h3_7_dir.mkdir(exist_ok=True)
-        items_dir = h3_7_dir / "items"
-        items_dir.mkdir(exist_ok=True)
+        h3_7_items_dir = h3_7_dir / "items"
+        h3_7_items_dir.mkdir(exist_ok=True)
+
+        quadkeys_dir = output_path / "speciesgrids-h3-7-quadkeys"
+        quadkeys_dir.mkdir(exist_ok=True)
+        quadkeys_items_dir = quadkeys_dir / "items"
+        quadkeys_items_dir.mkdir(exist_ok=True)
 
         parquet_keys = self._list_parquet_keys()
         logger.info(f"Found {len(parquet_keys)} parquet files under s3://{self.s3_bucket}/{self.s3_prefix}")
 
         root_catalog = self.create_root_catalog_json()
-        h3_7_catalog = self.create_h3_7_catalog_json()
-        item = self.create_item_json(parquet_keys)
+        h3_7_collection = self.create_h3_7_collection_json()
+        quadkeys_collection = self.create_quadkeys_collection_json()
+        h3_7_item = self.create_h3_7_item_json()
 
         try:
             table_columns, sampled_key = self.generate_table_columns(parquet_keys)
-            h3_7_catalog["properties"]["table:columns"] = table_columns
-            item["properties"]["table:columns"] = table_columns
+            h3_7_collection["properties"]["table:columns"] = table_columns
+            quadkeys_collection["properties"]["table:columns"] = table_columns
+            h3_7_item["properties"]["table:columns"] = table_columns
             logger.info(f"Schema introspected from s3://{self.s3_bucket}/{sampled_key}")
         except Exception as e:
             logger.warning(f"Failed to introspect schema: {e}")
 
-        h3_7_catalog["links"].append({
+        h3_7_collection["links"].append({
             "rel": "item",
             "href": "./items/speciesgrids-h3-7.json",
             "type": "application/json",
             "title": "speciesgrids H3 resolution 7"
         })
 
+        with open(h3_7_items_dir / "speciesgrids-h3-7.json", "w") as f:
+            json.dump(h3_7_item, f, indent=2)
+
+        for parquet_key in parquet_keys:
+            quadkey = Path(parquet_key).stem
+            item = self.create_quadkey_item_json(quadkey, parquet_key)
+            if h3_7_collection["properties"].get("table:columns"):
+                item["properties"]["table:columns"] = h3_7_collection["properties"]["table:columns"]
+
+            item_filename = f"speciesgrids-h3-7-{quadkey}.json"
+            with open(quadkeys_items_dir / item_filename, "w") as f:
+                json.dump(item, f, indent=2)
+
+            quadkeys_collection["links"].append({
+                "rel": "item",
+                "href": f"./items/{item_filename}",
+                "type": "application/json",
+                "title": f"speciesgrids H3-7 quadkey {quadkey}"
+            })
+
         with open(output_path / "catalog.json", "w") as f:
             json.dump(root_catalog, f, indent=2)
 
-        with open(h3_7_dir / "catalog.json", "w") as f:
-            json.dump(h3_7_catalog, f, indent=2)
+        with open(h3_7_dir / "collection.json", "w") as f:
+            json.dump(h3_7_collection, f, indent=2)
 
-        with open(items_dir / "speciesgrids-h3-7.json", "w") as f:
-            json.dump(item, f, indent=2)
+        with open(quadkeys_dir / "collection.json", "w") as f:
+            json.dump(quadkeys_collection, f, indent=2)
 
-        logger.info(f"STAC catalog written to {output_path}")
+        logger.info(
+            f"STAC catalog written to {output_path} "
+            f"(1 full-dataset item, {len(parquet_keys)} quadkey items)"
+        )
         return output_path
 
 

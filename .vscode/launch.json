@@ -34,6 +34,23 @@
       "request": "launch",
       "command": "aws s3 sync ${workspaceFolder}/stac/speciesgrids s3://obis-stac/speciesgrids",
       "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Generate STAC catalog for obistherm",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "scripts/obistherm.py",
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Sync obistherm STAC folder to obis-stac S3 bucket",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "aws s3 sync ${workspaceFolder}/stac/obistherm s3://obis-stac/obistherm",
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

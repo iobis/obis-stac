@@ -110,7 +110,7 @@ class ObistherSTACCreator:
     def generate_table_columns(self, parquet_keys: List[Tuple[int, str]]) -> List[Dict[str, Any]]:
         if not parquet_keys:
             raise ValueError("No parquet files found")
-        # Use the smallest file (most recent year) to read schema quickly
+        # Use the most recent year to read schema quickly
         _, key = sorted(parquet_keys, key=lambda t: t[0], reverse=True)[0]
         logger.info(f"Reading schema from s3://{self.s3_bucket}/{key}")
         obj = self.s3_client.get_object(Bucket=self.s3_bucket, Key=key)
@@ -140,9 +140,15 @@ class ObistherSTACCreator:
                 },
                 {
                     "rel": "child",
-                    "href": "./obistherm/catalog.json",
+                    "href": "./obistherm-full/collection.json",
                     "type": "application/json",
-                    "title": "obistherm"
+                    "title": "obistherm full dataset"
+                },
+                {
+                    "rel": "child",
+                    "href": "./obistherm-by-year/collection.json",
+                    "type": "application/json",
+                    "title": "obistherm by year"
                 },
                 {
                     "rel": "self",
@@ -152,12 +158,148 @@ class ObistherSTACCreator:
             ]
         }
 
-    def create_collection_catalog_json(self) -> Dict[str, Any]:
+    def create_full_collection_json(self) -> Dict[str, Any]:
         return {
             "stac_version": "1.0.0",
-            "type": "Catalog",
-            "id": "obistherm",
-            "title": "obistherm",
+            "type": "Collection",
+            "id": "obistherm-full",
+            "title": "obistherm full dataset",
+            "description": (
+                "OBIS occurrence data matched with monthly sea temperature from four satellite "
+                "and reanalysis products: GLORYS (CMEMS global ocean reanalysis, 50 depth levels, "
+                "1/12° resolution, 1993–present), CoralTemp (NOAA nighttime SST, 5 km, 1986–present), "
+                "MUR-SST (NASA daily SST, ~1 km, 2002–present), and OSTIA (Met Office foundation SST, "
+                "0.05°, 2007–present). Each record links a marine species occurrence to surface, mid, "
+                "deep, and bottom temperatures as well as H3 hexagonal cell membership. "
+                f"The dataset covers {self.start_year}–{self.end_year} and is partitioned by year."
+            ),
+            "keywords": self.keywords,
+            "license": self.license,
+            "providers": self.providers,
+            "extent": self.extent,
+            "properties": {
+                "table:columns": []
+            },
+            "item_assets": {
+                "data": {
+                    "type": "application/x-parquet",
+                    "roles": ["data"],
+                    "title": "GeoParquet file",
+                    "description": "Full obistherm dataset as GeoParquet, partitioned by year"
+                }
+            },
+            "links": [
+                {
+                    "rel": "root",
+                    "href": "../catalog.json",
+                    "type": "application/json",
+                    "title": "Root catalog"
+                },
+                {
+                    "rel": "parent",
+                    "href": "../catalog.json",
+                    "type": "application/json",
+                    "title": "Root catalog"
+                },
+                {
+                    "rel": "self",
+                    "href": "./collection.json",
+                    "type": "application/json"
+                },
+                {
+                    "rel": "license",
+                    "href": "https://creativecommons.org/licenses/by-nc/4.0/",
+                    "type": "text/html",
+                    "title": "CC BY-NC 4.0 License"
+                },
+                {
+                    "rel": "documentation",
+                    "href": "https://github.com/iobis/obistherm",
+                    "type": "text/html",
+                    "title": "obistherm documentation"
+                }
+            ],
+            "stac_extensions": [
+                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/table/v1.2.0/schema.json"
+            ]
+        }
+
+    def create_full_item_json(self) -> Dict[str, Any]:
+        bbox = self.extent["spatial"]["bbox"][0]
+        return {
+            "stac_version": "1.0.0",
+            "type": "Feature",
+            "id": "obistherm-full",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [bbox[0], bbox[1]],
+                    [bbox[2], bbox[1]],
+                    [bbox[2], bbox[3]],
+                    [bbox[0], bbox[3]],
+                    [bbox[0], bbox[1]]
+                ]]
+            },
+            "bbox": bbox,
+            "properties": {
+                "datetime": None,
+                "start_datetime": self.extent["temporal"]["interval"][0][0],
+                "end_datetime": self.extent["temporal"]["interval"][0][1],
+                "title": "obistherm full dataset",
+                "description": (
+                    f"Full obistherm dataset ({self.start_year}–{self.end_year}): OBIS occurrence records "
+                    "matched with sea temperature from GLORYS, CoralTemp, MUR-SST, and OSTIA."
+                ),
+                "created": datetime.utcnow().isoformat() + "Z",
+                "updated": datetime.utcnow().isoformat() + "Z",
+                "table:columns": []
+            },
+            "assets": {
+                "data": {
+                    "href": f"{self.s3_https_base}/{self.s3_prefix}",
+                    "type": "application/x-parquet",
+                    "roles": ["data"],
+                    "title": "obistherm full dataset GeoParquet",
+                    "description": f"Full obistherm dataset as GeoParquet, partitioned by year under {self.s3_prefix}"
+                }
+            },
+            "links": [
+                {
+                    "rel": "parent",
+                    "href": "../collection.json",
+                    "type": "application/json",
+                    "title": "obistherm full dataset collection"
+                },
+                {
+                    "rel": "root",
+                    "href": "../../catalog.json",
+                    "type": "application/json",
+                    "title": "Root catalog"
+                },
+                {
+                    "rel": "self",
+                    "href": "./obistherm-full.json",
+                    "type": "application/json"
+                },
+                {
+                    "rel": "about",
+                    "href": "https://github.com/iobis/obistherm",
+                    "type": "text/html",
+                    "title": "obistherm documentation"
+                }
+            ],
+            "stac_extensions": [
+                "https://stac-extensions.github.io/table/v1.2.0/schema.json"
+            ]
+        }
+
+    def create_byyear_collection_json(self) -> Dict[str, Any]:
+        return {
+            "stac_version": "1.0.0",
+            "type": "Collection",
+            "id": "obistherm-by-year",
+            "title": "obistherm by year",
             "description": (
                 "OBIS occurrence data matched with monthly sea temperature from four satellite "
                 "and reanalysis products: GLORYS (CMEMS global ocean reanalysis, 50 depth levels, "
@@ -197,7 +339,7 @@ class ObistherSTACCreator:
                 },
                 {
                     "rel": "self",
-                    "href": "./catalog.json",
+                    "href": "./collection.json",
                     "type": "application/json"
                 },
                 {
@@ -261,9 +403,9 @@ class ObistherSTACCreator:
             "links": [
                 {
                     "rel": "parent",
-                    "href": "../catalog.json",
+                    "href": "../collection.json",
                     "type": "application/json",
-                    "title": "obistherm catalog"
+                    "title": "obistherm by year collection"
                 },
                 {
                     "rel": "root",
@@ -292,34 +434,55 @@ class ObistherSTACCreator:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        collection_dir = output_path / "obistherm"
-        collection_dir.mkdir(exist_ok=True)
-        items_dir = collection_dir / "items"
-        items_dir.mkdir(exist_ok=True)
+        full_collection_dir = output_path / "obistherm-full"
+        full_collection_dir.mkdir(exist_ok=True)
+        full_items_dir = full_collection_dir / "items"
+        full_items_dir.mkdir(exist_ok=True)
+
+        byyear_collection_dir = output_path / "obistherm-by-year"
+        byyear_collection_dir.mkdir(exist_ok=True)
+        byyear_items_dir = byyear_collection_dir / "items"
+        byyear_items_dir.mkdir(exist_ok=True)
 
         parquet_keys = self._list_parquet_keys()
         logger.info(f"Found {len(parquet_keys)} yearly parquet files under s3://{self.s3_bucket}/{self.s3_prefix}")
 
         root_catalog = self.create_root_catalog_json()
-        collection_catalog = self.create_collection_catalog_json()
+        full_collection = self.create_full_collection_json()
+        byyear_collection = self.create_byyear_collection_json()
 
         try:
             table_columns = self.generate_table_columns(parquet_keys)
-            collection_catalog["properties"]["table:columns"] = table_columns
+            full_collection["properties"]["table:columns"] = table_columns
+            byyear_collection["properties"]["table:columns"] = table_columns
             logger.info("Schema introspected successfully")
         except Exception as e:
             logger.warning(f"Failed to introspect schema: {e}")
 
+        full_item = self.create_full_item_json()
+        if full_collection["properties"].get("table:columns"):
+            full_item["properties"]["table:columns"] = full_collection["properties"]["table:columns"]
+
+        with open(full_items_dir / "obistherm-full.json", "w") as f:
+            json.dump(full_item, f, indent=2)
+
+        full_collection["links"].append({
+            "rel": "item",
+            "href": "./items/obistherm-full.json",
+            "type": "application/json",
+            "title": "obistherm full dataset"
+        })
+
         for year, key in parquet_keys:
             item = self.create_item_json(year, key)
-            if collection_catalog["properties"].get("table:columns"):
-                item["properties"]["table:columns"] = collection_catalog["properties"]["table:columns"]
+            if byyear_collection["properties"].get("table:columns"):
+                item["properties"]["table:columns"] = byyear_collection["properties"]["table:columns"]
 
             item_filename = f"obistherm-{year}.json"
-            with open(items_dir / item_filename, "w") as f:
+            with open(byyear_items_dir / item_filename, "w") as f:
                 json.dump(item, f, indent=2)
 
-            collection_catalog["links"].append({
+            byyear_collection["links"].append({
                 "rel": "item",
                 "href": f"./items/{item_filename}",
                 "type": "application/json",
@@ -329,10 +492,16 @@ class ObistherSTACCreator:
         with open(output_path / "catalog.json", "w") as f:
             json.dump(root_catalog, f, indent=2)
 
-        with open(collection_dir / "catalog.json", "w") as f:
-            json.dump(collection_catalog, f, indent=2)
+        with open(full_collection_dir / "collection.json", "w") as f:
+            json.dump(full_collection, f, indent=2)
 
-        logger.info(f"STAC catalog written to {output_path} ({len(parquet_keys)} items)")
+        with open(byyear_collection_dir / "collection.json", "w") as f:
+            json.dump(byyear_collection, f, indent=2)
+
+        logger.info(
+            f"STAC catalog written to {output_path} "
+            f"(1 full-dataset item, {len(parquet_keys)} yearly items)"
+        )
         return output_path
 
 
