@@ -217,15 +217,15 @@ class STACCreator:
                 },
                 {
                     "rel": "child",
-                    "href": "./obis-open-data-occurrence/catalog.json",
+                    "href": "./obis-open-data-occurrence/collection.json",
                     "type": "application/json",
-                    "title": "OBIS open data occurrence catalog"
+                    "title": "OBIS open data occurrence collection"
                 },
                 {
                     "rel": "child",
-                    "href": "./obis-open-data-occurrence-datasets/catalog.json",
+                    "href": "./obis-open-data-occurrence-datasets/collection.json",
                     "type": "application/json",
-                    "title": "OBIS occurrence individual datasets catalog"
+                    "title": "OBIS occurrence individual datasets collection"
                 },
                 {
                     "rel": "self",
@@ -235,13 +235,13 @@ class STACCreator:
             ]
         }
 
-    def create_occurrence_catalog_json(self) -> Dict[str, Any]:
+    def create_occurrence_collection_json(self) -> Dict[str, Any]:
         return {
             "stac_version": "1.0.0",
             "type": "Collection",
             "id": "obis-open-data-occurrence",
-            "title": "OBIS open data occurrence catalog",
-            "description": "OBIS open data occurrence catalog",
+            "title": "OBIS open data occurrence collection",
+            "description": "OBIS open data occurrence collection",
             "keywords": self.keywords,
             "license": self.license,
             "providers": self.providers,
@@ -270,11 +270,11 @@ class STACCreator:
                     "rel": "parent",
                     "href": "../catalog.json",
                     "type": "application/json",
-                    "title": "Parent catalog"
+                    "title": "Root catalog"
                 },
                 {
                     "rel": "self",
-                    "href": "./catalog.json",
+                    "href": "./collection.json",
                     "type": "application/json"
                 },
                 {
@@ -291,22 +291,24 @@ class STACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json"
+                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
         }
 
-    def create_datasets_catalog_json(self) -> Dict[str, Any]:
+    def create_datasets_collection_json(self) -> Dict[str, Any]:
         """
-        Create a child Catalog that groups all per-dataset occurrence items.
+        Create a child Collection that groups all per-dataset occurrence items.
 
-        This keeps the main occurrence catalog focused on the combined dataset,
-        while exposing all dataset-level Parquet items in a separate catalog.
+        This keeps the main occurrence collection focused on the combined dataset,
+        while exposing all dataset-level Parquet items in a separate collection.
         """
         return {
             "stac_version": "1.0.0",
             "type": "Collection",
             "id": "obis-open-data-occurrence-datasets",
-            "title": "OBIS occurrence individual datasets catalog",
+            "title": "OBIS occurrence individual datasets collection",
             "description": "OBIS occurrence data as individual per dataset GeoParquet files",
             "keywords": self.keywords,
             "license": self.license,
@@ -338,7 +340,7 @@ class STACCreator:
                 },
                 {
                     "rel": "self",
-                    "href": "./catalog.json",
+                    "href": "./collection.json",
                     "type": "application/json"
                 },
                 {
@@ -355,7 +357,8 @@ class STACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json"
+                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
         }
 
@@ -398,9 +401,9 @@ class STACCreator:
             "links": [
                 {
                     "rel": "parent",
-                    "href": "../catalog.json",
+                    "href": "../collection.json",
                     "type": "application/json",
-                    "title": "Parent catalog"
+                    "title": "Parent collection"
                 },
                 {
                     "rel": "root",
@@ -416,8 +419,7 @@ class STACCreator:
             ],
             "stac_extensions": [
                 "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
-                "https://stac-extensions.github.io/table/v1.2.0/schema.json",
-                "https://stac-extensions.github.io/file/v2.0.0/schema.json"
+                "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
         }
 
@@ -531,9 +533,9 @@ class STACCreator:
             "links": [
                 {
                     "rel": "parent",
-                    "href": "../catalog.json",
+                    "href": "../collection.json",
                     "type": "application/json",
-                    "title": "Parent catalog"
+                    "title": "Parent collection"
                 },
                 {
                     "rel": "root",
@@ -548,9 +550,7 @@ class STACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
-                "https://stac-extensions.github.io/table/v1.2.0/schema.json",
-                "https://stac-extensions.github.io/file/v2.0.0/schema.json"
+                "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
             ]
         }
 
@@ -584,8 +584,8 @@ class STACCreator:
         with open(output_path / "catalog.json", "w") as f:
             json.dump(catalog_json, f, indent=2)
 
-        occurrence_catalog_json = self.create_occurrence_catalog_json()
-        datasets_catalog_json = self.create_datasets_catalog_json()
+        occurrence_catalog_json = self.create_occurrence_collection_json()
+        datasets_catalog_json = self.create_datasets_collection_json()
 
         combined_item_json = self.create_combined_item_json()
 
@@ -643,10 +643,10 @@ class STACCreator:
 
             dataset_items_created += 1
 
-        with open(occurrence_dir / "catalog.json", "w") as f:
+        with open(occurrence_dir / "collection.json", "w") as f:
             json.dump(occurrence_catalog_json, f, indent=2)
 
-        with open(datasets_catalog_dir / "catalog.json", "w") as f:
+        with open(datasets_catalog_dir / "collection.json", "w") as f:
             json.dump(datasets_catalog_json, f, indent=2)
 
         logger.info(f"STAC catalog created at {output_path}")
