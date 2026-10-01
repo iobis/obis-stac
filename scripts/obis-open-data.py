@@ -1,9 +1,11 @@
 import json
 import logging
+import re
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import unquote
 
 import boto3
 import botocore
@@ -14,6 +16,19 @@ import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+DOI_PATTERN = re.compile(r"10\.[0-9a-zA-Z]{4,}/[^\s]+")
+
+
+def extract_doi(citation_id: str) -> Optional[str]:
+    """Return the first valid bare DOI (10.xxxx/suffix) in citation_id, or None.
+
+    Handles URL-encoding, doi.org prefixes, stray leading slashes, spaces after
+    the slash, and multiple DOIs separated by whitespace.
+    """
+    value = re.sub(r"/\s+", "/", unquote(citation_id or "").strip())
+    match = DOI_PATTERN.search(value)
+    return match.group(0) if match else None
 
 
 class STACCreator:
@@ -511,8 +526,8 @@ class STACCreator:
                 "updated": datetime.utcnow().isoformat() + "Z",
                 "sci:citation": citation,
                 **(
-                    {"sci:doi": citation_id.replace("https://doi.org/", "")}
-                    if citation_id.startswith("https://doi.org/")
+                    {"sci:doi": doi}
+                    if (doi := extract_doi(citation_id))
                     else {}
                 ),
                 **(
