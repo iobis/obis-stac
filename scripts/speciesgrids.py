@@ -114,7 +114,7 @@ class speciesgridsSTACCreator:
 
     def _collection_base(self, id: str, title: str, description: str, self_href: str, parent_dir: str = "..") -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Collection",
             "id": id,
             "title": title,
@@ -148,11 +148,6 @@ class speciesgridsSTACCreator:
                     "title": "Root catalog"
                 },
                 {
-                    "rel": "self",
-                    "href": self_href,
-                    "type": "application/json"
-                },
-                {
                     "rel": "license",
                     "href": "https://creativecommons.org/licenses/by/4.0/",
                     "type": "text/html",
@@ -166,14 +161,13 @@ class speciesgridsSTACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
         }
 
     def create_root_catalog_json(self) -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Catalog",
             "id": "obis-speciesgrids-catalog",
             "title": "OBIS speciesgrids catalog",
@@ -199,11 +193,6 @@ class speciesgridsSTACCreator:
                     "href": "./speciesgrids-h3-7-quadkeys/collection.json",
                     "type": "application/json",
                     "title": "speciesgrids H3 resolution 7 by quadkey"
-                },
-                {
-                    "rel": "self",
-                    "href": "./catalog.json",
-                    "type": "application/json"
                 }
             ]
         }
@@ -224,7 +213,7 @@ class speciesgridsSTACCreator:
     def create_h3_7_item_json(self) -> Dict[str, Any]:
         bbox = self.extent["spatial"]["bbox"][0]
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Feature",
             "id": "speciesgrids-h3-7",
             "geometry": {
@@ -278,11 +267,6 @@ class speciesgridsSTACCreator:
                     "title": "Root catalog"
                 },
                 {
-                    "rel": "self",
-                    "href": "./speciesgrids-h3-7.json",
-                    "type": "application/json"
-                },
-                {
                     "rel": "about",
                     "href": "https://github.com/iobis/speciesgrids",
                     "type": "text/html",
@@ -311,7 +295,7 @@ class speciesgridsSTACCreator:
         bbox = self.extent["spatial"]["bbox"][0]
         item_id = f"speciesgrids-h3-7-{quadkey}"
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Feature",
             "id": item_id,
             "geometry": {
@@ -358,11 +342,6 @@ class speciesgridsSTACCreator:
                     "href": "../../catalog.json",
                     "type": "application/json",
                     "title": "Root catalog"
-                },
-                {
-                    "rel": "self",
-                    "href": f"./{item_id}.json",
-                    "type": "application/json"
                 },
                 {
                     "rel": "about",

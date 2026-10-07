@@ -218,7 +218,7 @@ class STACCreator:
 
     def create_catalog_json(self) -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Catalog",
             "id": "obis-open-data-catalog",
             "title": "OBIS open data catalog",
@@ -241,18 +241,13 @@ class STACCreator:
                     "href": "./obis-open-data-occurrence-datasets/collection.json",
                     "type": "application/json",
                     "title": "OBIS occurrence individual datasets collection"
-                },
-                {
-                    "rel": "self",
-                    "href": "./catalog.json",
-                    "type": "application/json"
                 }
             ]
         }
 
     def create_occurrence_collection_json(self) -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Collection",
             "id": "obis-open-data-occurrence",
             "title": "OBIS open data occurrence collection",
@@ -288,11 +283,6 @@ class STACCreator:
                     "title": "Root catalog"
                 },
                 {
-                    "rel": "self",
-                    "href": "./collection.json",
-                    "type": "application/json"
-                },
-                {
                     "rel": "license",
                     "href": "https://creativecommons.org/licenses/by-nc/4.0/",
                     "type": "text/html",
@@ -306,7 +296,6 @@ class STACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/scientific/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
@@ -320,7 +309,7 @@ class STACCreator:
         while exposing all dataset-level Parquet items in a separate collection.
         """
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Collection",
             "id": "obis-open-data-occurrence-datasets",
             "title": "OBIS occurrence individual datasets collection",
@@ -354,11 +343,6 @@ class STACCreator:
                     "title": "Root catalog"
                 },
                 {
-                    "rel": "self",
-                    "href": "./collection.json",
-                    "type": "application/json"
-                },
-                {
                     "rel": "license",
                     "href": "https://creativecommons.org/licenses/by-nc/4.0/",
                     "type": "text/html",
@@ -372,14 +356,13 @@ class STACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
         }
 
     def create_combined_item_json(self) -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Feature",
             "id": "obis-open-data-occurrence-geoparquet",
             "geometry": {
@@ -425,11 +408,6 @@ class STACCreator:
                     "href": "../../catalog.json",
                     "type": "application/json",
                     "title": "Root catalog"
-                },
-                {
-                    "rel": "self",
-                    "href": f"./obis-occurrence-geoparquet.json",
-                    "type": "application/json"
                 }
             ],
             "stac_extensions": [
@@ -511,7 +489,7 @@ class STACCreator:
         item_id = f"obis-dataset-{dataset_id}"
 
         item: Dict[str, Any] = {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Feature",
             "id": item_id,
             "geometry": geometry,
@@ -557,11 +535,6 @@ class STACCreator:
                     "href": "../../catalog.json",
                     "type": "application/json",
                     "title": "Root catalog"
-                },
-                {
-                    "rel": "self",
-                    "href": f"./{item_id}.json",
-                    "type": "application/json"
                 }
             ],
             "stac_extensions": [

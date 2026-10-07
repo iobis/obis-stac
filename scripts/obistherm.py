@@ -123,7 +123,7 @@ class ObistherSTACCreator:
 
     def create_root_catalog_json(self) -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Catalog",
             "id": "obistherm-catalog",
             "title": "obistherm catalog",
@@ -149,18 +149,13 @@ class ObistherSTACCreator:
                     "href": "./obistherm-by-year/collection.json",
                     "type": "application/json",
                     "title": "obistherm by year"
-                },
-                {
-                    "rel": "self",
-                    "href": "./catalog.json",
-                    "type": "application/json"
                 }
             ]
         }
 
     def create_full_collection_json(self) -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Collection",
             "id": "obistherm-full",
             "title": "obistherm full dataset",
@@ -202,11 +197,6 @@ class ObistherSTACCreator:
                     "title": "Root catalog"
                 },
                 {
-                    "rel": "self",
-                    "href": "./collection.json",
-                    "type": "application/json"
-                },
-                {
                     "rel": "license",
                     "href": "https://creativecommons.org/licenses/by-nc/4.0/",
                     "type": "text/html",
@@ -220,7 +210,6 @@ class ObistherSTACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
         }
@@ -228,7 +217,7 @@ class ObistherSTACCreator:
     def create_full_item_json(self) -> Dict[str, Any]:
         bbox = self.extent["spatial"]["bbox"][0]
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Feature",
             "id": "obistherm-full",
             "geometry": {
@@ -278,11 +267,6 @@ class ObistherSTACCreator:
                     "title": "Root catalog"
                 },
                 {
-                    "rel": "self",
-                    "href": "./obistherm-full.json",
-                    "type": "application/json"
-                },
-                {
                     "rel": "about",
                     "href": "https://github.com/iobis/obistherm",
                     "type": "text/html",
@@ -296,7 +280,7 @@ class ObistherSTACCreator:
 
     def create_byyear_collection_json(self) -> Dict[str, Any]:
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Collection",
             "id": "obistherm-by-year",
             "title": "obistherm by year",
@@ -338,11 +322,6 @@ class ObistherSTACCreator:
                     "title": "Root catalog"
                 },
                 {
-                    "rel": "self",
-                    "href": "./collection.json",
-                    "type": "application/json"
-                },
-                {
                     "rel": "license",
                     "href": "https://creativecommons.org/licenses/by-nc/4.0/",
                     "type": "text/html",
@@ -356,7 +335,6 @@ class ObistherSTACCreator:
                 }
             ],
             "stac_extensions": [
-                "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
                 "https://stac-extensions.github.io/table/v1.2.0/schema.json"
             ]
         }
@@ -364,7 +342,7 @@ class ObistherSTACCreator:
     def create_item_json(self, year: int, parquet_key: str) -> Dict[str, Any]:
         bbox = self.extent["spatial"]["bbox"][0]
         return {
-            "stac_version": "1.0.0",
+            "stac_version": "1.1.0",
             "type": "Feature",
             "id": f"obistherm-{year}",
             "geometry": {
@@ -412,11 +390,6 @@ class ObistherSTACCreator:
                     "href": "../../catalog.json",
                     "type": "application/json",
                     "title": "Root catalog"
-                },
-                {
-                    "rel": "self",
-                    "href": f"./obistherm-{year}.json",
-                    "type": "application/json"
                 },
                 {
                     "rel": "about",
